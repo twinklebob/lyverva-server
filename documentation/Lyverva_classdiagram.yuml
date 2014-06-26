@@ -1,5 +1,5 @@
-// Lyverva DB Structure
-[Library]-collections*>[Collection]
-[Library]<libraries*-users*>[User]
-[Collection]-items*>[Item]
-// Item has some metadata - including location
+// yuml.me markup
+// Lyverva Server DB Structure
+[Library|ID;Name;Owner]-collections*>[Collection|ID;Name;Type;Location]
+[Library]<libraries*-users*>[User|ID;First Name;Surname;Email;Password]
+[Collection]-items*>[Item|ID;Reference;Name;Attribution;Location]
