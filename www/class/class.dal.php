@@ -1,6 +1,6 @@
 <?php
 class lyvDAL {
-	protected $aIgnoreSave = array("sTableName", "aIgnoreSave", "aClassExludeVars", "dtCreatedate", "iCreateuser", "dtModifydate", "iModifyuser");
+	protected $aIgnoreSave = array("sTableName", "aIgnoreSave", "aClassExludeVars", "iId", "dtCreatedate", "iCreateuser", "dtModifydate", "iModifyuser");
 	protected $sTableName;
 	protected $sIdFieldName;
 	protected $aClassExludeVars = array();
@@ -45,6 +45,11 @@ class lyvDAL {
 		$aData = $this->getClassVars();
 		if($this->iId == 0) {
 			// TODO: Insert
+			// Set create/modify date and user
+			$aData['createdate'] = date("Y-m-d H:i", $this->dtCreatedate);
+			$aData['createuser'] = $iUserId;
+			$aData['modifydate'] = date("Y-m-d H:i");
+			$aData['modifyuser'] = $iUserId;
 		} else {
 			// TODO: Update
 			// Get modifydate and modifyuser
