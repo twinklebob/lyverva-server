@@ -1,6 +1,6 @@
 CREATE TABLE lyvuser
 (
-	userid int NOT NULL,
+	lyvuserid int NOT NULL,
 	createdate datetime NOT NULL,
 	createuser int DEFAULT 1,
 	modifydate datetime NOT NULL,

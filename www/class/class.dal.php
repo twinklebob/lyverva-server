@@ -1,13 +1,10 @@
 <?php
 class lyvDAL {
-	protected $aIgnoreSave = array("sTableName", "aIgnoreSave", "aClassExludeVars", "iId", "dtCreatedate", "iCreateuser", "dtModifydate", "iModifyuser");
+	protected $aIgnoreSave = array("sTableName", "aIgnoreSave", "aClassExludeVars", "dtCreatedate", "iCreateuser", "dtModifydate", "iModifyuser");
 	protected $sTableName;
-	protected $sIdFieldName;
 	protected $aClassExludeVars = array();
 	
 	protected $oDb;
-	
-	public $iId;
 	
 	public $dtCreatedate = 0;
 	public $iCreateuser = 0;
@@ -15,25 +12,26 @@ class lyvDAL {
 	public $iModifyuser = 0;
 	
 	public function __construct($iId = 0) {
-		// TODO: Create DB Connection
+		// Create DB Connection
 		$this->oDb = Database::obtain(); 
 		
 		// If specific item requested, load it
 		if($iId != 0) {
-			$this->iId;
-			$this->load();
+			$this->load($iId);
 		} else {
-			// TODO: Default create/modify values
+			// Default create/modify values
+			$this->dtCreatedate = date("Y-m-d H:i");
+			$this->dtModifydate = date("Y-m-d H:i");
 		}
 	}
 	
-	public function load() {
+	public function load($iId) {
 		// First check DB connection
 		if(!isset($this->oDb) || empty($this->oDb) || !$this->oDb->bIsConnected) {
 			throw new ErrorException(get_class($this) . " Load: Unable to connect to database.");
 		}
-		$sSql = "SELECT * FROM [" . $this->sTableName . "] WHERE [" . $this->sIdFieldName . "] = ?";
-		$aResults = $this->oDb->queryFirst($sSql, $this->iId);
+		$sSql = "SELECT * FROM [" . $this->sTableName . "] WHERE [" . $this->sTableName . "id] = ?";
+		$aResults = $this->oDb->queryFirst($sSql, $iId);
 		if($aResults) {
 			$this->putClassVars($aResults);
 		} else {
@@ -43,13 +41,16 @@ class lyvDAL {
 	
 	public function save($iUserId = 0) {
 		$aData = $this->getClassVars();
-		if($this->iId == 0) {
+		$sIdField = "i" . $this->sTableName . "id";
+		if($this->$sIdField == 0) {
 			// TODO: Insert
 			// Set create/modify date and user
 			$aData['createdate'] = date("Y-m-d H:i", $this->dtCreatedate);
 			$aData['createuser'] = $iUserId;
 			$aData['modifydate'] = date("Y-m-d H:i");
 			$aData['modifyuser'] = $iUserId;
+			
+			
 		} else {
 			// TODO: Update
 			// Get modifydate and modifyuser
@@ -59,19 +60,35 @@ class lyvDAL {
 	}
 	
 	private function getClassVars() {
-		// TODO: Cycle through each property
+		// Cycle through each property
+		$aVars = array();
+		foreach(get_object_vars($this) as $key => $value) {
+			// Exclude required variables
+			if(!array_key_exists($key, array_merge($this->aClassExludeVars, $this->aIgnoreSave))) {
+				// Strip type
+				if(preg_match('/^(dt|[a|b|d|f|i|s])(.+)$/i', $key, $result) !== false) {
+					$aVars[$result[2]] = $value;
+				} else {
+					$aVars[$key] = $value;
+				}
+			}
+		}
 		
-		// TODO: Exclude required variables
-		
-		// TODO: Strip type
+		return $aVars;
 	}
 	
 	private function putClassVars($aData) {
-		// TODO: Cycle through each property
-		
-		// TODO: Strip type
-		
-		// TODO: Update value if it is in aData
+		// Cycle through each property
+		foreach(get_object_vars($this) as $key => $value) {
+			// Strip type
+			if(preg_match('/^(dt|[a|b|d|f|i|s])(.+)$/i', $key, $result) !== false) {
+				$sFieldName = strtolower($result[2]);
+				// Update value if it is in aData
+				if(array_key_exists($sFieldName, $aData)) {
+					$this->$key = $aData[$sFieldName];
+				}
+			}
+		}
 	}
 }
 ?>

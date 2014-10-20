@@ -1,6 +1,6 @@
 CREATE TABLE collectionitem
 (
-	itemid int NOT NULL,
+	collectionitemid int NOT NULL,
 	itemguid varchar(36) NOT NULL,
 	createdate datetime NOT NULL,
 	createuser int DEFAULT 1,
@@ -17,7 +17,7 @@ CREATE TABLE collectionitem
 
 CREATE TABLE itemmeta
 (
-	metaid int NOT NULL,
+	itemmetaid int NOT NULL,
 	itemid int NOT NULL,
 	createdate datetime NOT NULL,
 	createuser int DEFAULT 1,

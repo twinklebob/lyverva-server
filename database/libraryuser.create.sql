@@ -1,6 +1,6 @@
 CREATE TABLE libraryuser
 (
-	libuserid int NOT NULL,
+	libraryuserid int NOT NULL,
 	createdate datetime NOT NULL,
 	createuser int DEFAULT 1,
 	modifydate datetime NOT NULL,
