@@ -1,5 +1,6 @@
 // yuml.me markup
 // Lyverva Server DB Structure
-[Library|ID;Name;Owner]-collections*>[Collection|ID;Name;Type;Location]
-[Library]<libraries*-users*>[User|ID;First Name;Surname;Email;Password]
-[Collection]-items*>[Item|ID;Reference;Name;Attribution;Location]
+[Library|ID;CreateDate;CreateUser;ModifyDate;ModifyUser;Name;Owner]-collections*>[Collection|ID;CreateDate;CreateUser;ModifyDate;ModifyUser;Name;Type;Location]
+[Library]<libraries*-users*>[User|ID;CreateDate;CreateUser;ModifyDate;ModifyUser;First Name;Surname;Email;Password]
+[Collection]-items*>[Item|ID;CreateDate;CreateUser;ModifyDate;ModifyUser;Reference;Name;Attribution;Location]
+[Item]-*>[ItemMetaData|ID;CreateDate;CreateUser;ModifyDate;ModifyUser;MetaKey;MetaValue]
