@@ -1,6 +1,17 @@
 // yuml.me markup
 // Lyverva Server DB Structure
-[Library|ID;CreateDate;CreateUser;ModifyDate;ModifyUser;Name;Owner]-collections*>[Collection|ID;CreateDate;CreateUser;ModifyDate;ModifyUser;Name;Type;Location]
-[Library]<libraries*-users*>[User|ID;CreateDate;CreateUser;ModifyDate;ModifyUser;First Name;Surname;Email;Password]
-[Collection]-items*>[Item|ID;CreateDate;CreateUser;ModifyDate;ModifyUser;Reference;Name;Attribution;Location]
-[Item]-*>[ItemMetaData|ID;CreateDate;CreateUser;ModifyDate;ModifyUser;MetaKey;MetaValue]
+// Objects
+[Library|Library ID; Library GUID; Create Date; Create User; Modify Date; Modify User; Name; Location]
+[Collection|Collection ID; Collection GUID; Create Date; Create User; Modify Date; Modify User; Name; Type; Location]
+[LibraryUser|Library User ID; Create Date; Create User; Modify Date; Modify User; Library ID; User ID; User Type]
+[UserType|User Type ID; Description]
+[User|ID; Create Date; Create User; Modify Date; Modify User; First Name; Surname; Email; Password]
+[Item|Item ID; Item GUID; Create Date; Create User; Modify Date; Modify User; Reference; Name; Attribution; Location]
+[ItemMetaData|ID; Create Date; Create User; Modify Date; Modify User; Meta Key; Meta Value]
+// Connections
+[Library]-collections*>[Collection]
+[Library]<libraries*-[LibraryUser]
+[LibraryUser]-[UserType]
+[LibraryUser]-users*>[User]
+[Collection]-items*>[Item]
+[Item]-*>[ItemMetaData]
