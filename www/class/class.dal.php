@@ -43,28 +43,50 @@ class lyvDAL {
 		$aData = $this->getClassVars();
 		$sIdField = "i" . $this->sTableName . "id";
 		if($this->$sIdField == 0) {
-			// TODO: Insert
 			// Set create/modify date and user
 			$aData['createdate'] = date("Y-m-d H:i", $this->dtCreatedate);
 			$aData['createuser'] = $iUserId;
 			$aData['modifydate'] = date("Y-m-d H:i");
 			$aData['modifyuser'] = $iUserId;
 			
+			// Do INSERT
+			$iSqlResult = $this->oDb->insert(strtoupper($this->sTableName), $aData);
 			
+			if($iSqlResult !== 0) {
+				$this->$sIdField = $iSqlResult;
+			} else {
+				$bRetVal = false;
+			}
+			
+			$iSqlResult = $this->oDb->insert("DB_AUDIT", array(
+			  "userid" => $aData['modifyuser'],
+			  "tablename" => strtoupper($this->sTableName),
+			  "rowid" => $this->$sIdField,
+			  "action" => "CREATE"
+			));
 		} else {
-			// TODO: Update
 			// Get modifydate and modifyuser
 			$aData['modifydate'] = date("Y-m-d H:i");
 			$aData['modifyuser'] = $iUserId;
+			
+			// Do UPDATE
+			$this->oDb->update(strtoupper($this->sTableName), $aData, array("id" => $this->$sIdField));
+			$iSqlResult = $this->oDb->insert("DB_AUDIT", array(
+			  "userid" => $aData['modifyuser'],
+			  "tablename" => strtoupper($this->sTableName),
+			  "rowid" => $this->$sIdField,
+			  "action" => "UPDATE"
+      			));
 		}
 	}
 	
 	private function getClassVars() {
 		// Cycle through each property
 		$aVars = array();
+		$sIdField = "i" . $this->sTableName . "id";
 		foreach(get_object_vars($this) as $key => $value) {
 			// Exclude required variables
-			if(!array_key_exists($key, array_merge($this->aClassExludeVars, $this->aIgnoreSave))) {
+			if(!array_key_exists($key, array_merge($this->aClassExludeVars, $this->aIgnoreSave, array($sIdField)))) {
 				// Strip type
 				if(preg_match('/^(dt|[a|b|d|f|i|s])(.+)$/i', $key, $result) !== false) {
 					$aVars[$result[2]] = $value;
