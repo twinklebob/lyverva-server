@@ -1,0 +1,208 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+		]
+	},
+	"buffers":
+	[
+		{
+			"contents": "<?php\n/**\n * Step 1: Require the Slim Framework\n *\n * If you are not using Composer, you need to require the\n * Slim Framework and register its PSR-0 autoloader.\n *\n * If you are using Composer, you can skip this step.\n */\nrequire 'include/config.inc.php';\nrequire 'Slim/Slim.php';\nrequire 'class/Database.singleton.php';\nrequire 'class/class.dal.php';\nrequire 'class/class.lyvuser.php';\n\n\\Slim\\Slim::registerAutoloader();\n\n\n$db = Database::obtain(DB_SERVER, DB_USER, DB_PASS, DB_DATABASE);\n\n$app = new \\Slim\\Slim();\n\n/**\n * Step 3: Define the Slim application routes\n *\n * Here we define several Slim application routes that respond\n * to appropriate HTTP request methods. In this example, the second\n * argument for `Slim::get`, `Slim::post`, `Slim::put`, `Slim::patch`, and `Slim::delete`\n * is an anonymous function.\n */\n\n// GET route\n$app->get(\n    '/',\n    function () {\n        $template = <<<EOT\n<!DOCTYPE html>\n    <html>\n        <head>\n            <meta charset=\"utf-8\"/>\n            <title>Slim Framework for PHP 5</title>\n            <style>\n                html,body,div,span,object,iframe,\n                h1,h2,h3,h4,h5,h6,p,blockquote,pre,\n                abbr,address,cite,code,\n                del,dfn,em,img,ins,kbd,q,samp,\n                small,strong,sub,sup,var,\n                b,i,\n                dl,dt,dd,ol,ul,li,\n                fieldset,form,label,legend,\n                table,caption,tbody,tfoot,thead,tr,th,td,\n                article,aside,canvas,details,figcaption,figure,\n                footer,header,hgroup,menu,nav,section,summary,\n                time,mark,audio,video{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent;}\n                body{line-height:1;}\n                article,aside,details,figcaption,figure,\n                footer,header,hgroup,menu,nav,section{display:block;}\n                nav ul{list-style:none;}\n                blockquote,q{quotes:none;}\n                blockquote:before,blockquote:after,\n                q:before,q:after{content:'';content:none;}\n                a{margin:0;padding:0;font-size:100%;vertical-align:baseline;background:transparent;}\n                ins{background-color:#ff9;color:#000;text-decoration:none;}\n                mark{background-color:#ff9;color:#000;font-style:italic;font-weight:bold;}\n                del{text-decoration:line-through;}\n                abbr[title],dfn[title]{border-bottom:1px dotted;cursor:help;}\n                table{border-collapse:collapse;border-spacing:0;}\n                hr{display:block;height:1px;border:0;border-top:1px solid #cccccc;margin:1em 0;padding:0;}\n                input,select{vertical-align:middle;}\n                html{ background: #EDEDED; height: 100%; }\n                body{background:#FFF;margin:0 auto;min-height:100%;padding:0 30px;width:440px;color:#666;font:14px/23px Arial,Verdana,sans-serif;}\n                h1,h2,h3,p,ul,ol,form,section{margin:0 0 20px 0;}\n                h1{color:#333;font-size:20px;}\n                h2,h3{color:#333;font-size:14px;}\n                h3{margin:0;font-size:12px;font-weight:bold;}\n                ul,ol{list-style-position:inside;color:#999;}\n                ul{list-style-type:square;}\n                code,kbd{background:#EEE;border:1px solid #DDD;border:1px solid #DDD;border-radius:4px;-moz-border-radius:4px;-webkit-border-radius:4px;padding:0 4px;color:#666;font-size:12px;}\n                pre{background:#EEE;border:1px solid #DDD;border-radius:4px;-moz-border-radius:4px;-webkit-border-radius:4px;padding:5px 10px;color:#666;font-size:12px;}\n                pre code{background:transparent;border:none;padding:0;}\n                a{color:#70a23e;}\n                header{padding: 30px 0;text-align:center;}\n            </style>\n        </head>\n        <body>\n            <header>\n                <a href=\"http://www.slimframework.com\"><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHIAAAA6CAYAAABs1g18AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAABRhJREFUeNrsXY+VsjAMR98twAo6Ao4gI+gIOIKOgCPICDoCjCAjXFdgha+5C3dcv/QfFB5i8h5PD21Bfk3yS9L2VpGnlGW5kS9wJMTHNRxpmjYRy6SycgRvL18OeMQOTYQ8HvIoJKiiz43hgHkq1zvK/h6e/TyJQXeV/VyWBOSHA4C5RvtMAiCc4ZB9FPjgRI8+YuKcrySO515a1hoAY3nc4G2AH52BZsn+MjaAEwIJICKAIR889HljMCcyrR0QE4v/q/BVBQva7Q1tAczG18+x+PvIswHEAslLbfGrMZKiXEOMAMy6LwlisQCJLPFMfKdBtli5dIihRyH7A627Iaiq5sJ1ThP9xoIgSdWSNVIHYmrTQgOgRyRNqm/M5PnrFFopr3F6B41cd8whRUSufUBU5EL4U93AYRnIWimCIiSI1wAaAZpJ9bPnxx8eyI3Gt4QybwWa6T/BvbQECUMQFkhd3jSkPFgrxwcynuBaNT/u6eJIlbGOBWSNIUDFEIwPZFAtBfYrfeIOSRSXuUYCsprCXwUIZWYnmEhJFMIocMDWjn206c2EsGLCJd42aWSyBNMnHxLEq7niMrY2qyDbQUbqrrTbwUPtxN1ZZCitQV4ZSd6DyoxhmRD6OFjuRUS/KdLGRHYowJZaqYgjt9Lchmi3QYA/cXBsHK6VfWNR5jgA1DLhwfFe4HqfODBpINEECCLO47LT/+HSvSd/OCOgQ8qE0DbHQUBqpC4BkKMPYPkFY4iAJXhGAYr1qmaqQDbECCg5A2NMchzR567aA4xcRKclI405Bmt46vYD7/Gcjqfk6GP/kh1wovIDSHDfiAs/8bOCQ4cf4qMt7eH5Cucr3S0aWGFfjdLHD8EhCFvXQlSqRrY5UV2O9cfZtk77jUFMXeqzCEZqSK4ICkSin2tE12/3rbVcE41OBjBjBPSdJ1N5lfYQpIuhr8axnyIy5KvXmkYnw8VbcwtTNj7fDNCmT2kPQXA+bxpEXkB21HlnSQq0gD67jnfh5KavVJa/XQYEFSaagWwbgjNA+ywstLpEWTKgc5gwVpsyO1bTII+tA6B7BPS+0PiznuM9gPKsPVXbFdADMtwbJxSmkXWfRh6AZhyyzBjIHoDmnCGaMZAKjd5hyNJYCBGDOVcg28AXQ5atAVDO3c4dSALQnYblfa3M4kc/cyA7gMIUBQCTyl4kugIpy8yA7ACqK8Uwk30lIFGOEV3rPDAELwQkr/9YjkaCPDQhCcsrAYlF1v8W8jAEYeQDY7qn6tNGWudfq+YUEr6uq6FZzBpJMUfWFDatLHMCciw2mRC+k81qCCA1DzK4aUVfrJpxnloZWCPVnOgYy8L3GvKjE96HpweQoy7iwVQclVutLOEKJxA8gaRCjSzgNI2zhh3bQhzBCQQPIHGaHaUd96GJbZz3Smmjy16u6j3FuKyNxcBarxqWWfYFE0tVVO1Rl3t1Mb05V00MQCJ71YHpNaMcsjWAfkQvPPkaNC7LqTG7JAhGXTKYf+VDeXAX9IvURoAwtTFHvyYIxtnd5tPkywrPafcwbeSuGVwFau3b76NO7SHQrvqhfFE8kM0Wvpv8gVYiYBlxL+fW/34bgP6bIC7JR7YPDubcHCPzIp4+cum7U6NlhZgK7lua3KGLeFwE2m+HblDYWSHG2SAfINuwBBfxbJEIuWZbBH4fAExD7cvaGVyXyH0dhiAYc92z3ZDfUVv+jgb8HrHy7WVO/8BFcy9vuTz+nwADAGnOR39Yg/QkAAAAAElFTkSuQmCC\" alt=\"Slim\"/></a>\n            </header>\n            <h1>Welcome to Slim!</h1>\n            <p>\n                Congratulations! Your Slim application is running. If this is\n                your first time using Slim, start with this <a href=\"http://www.slimframework.com/learn\" target=\"_blank\">\"Hello World\" Tutorial</a>.\n            </p>\n            <section>\n                <h2>Get Started</h2>\n                <ol>\n                    <li>The application code is in <code>index.php</code></li>\n                    <li>Read the <a href=\"http://docs.slimframework.com/\" target=\"_blank\">online documentation</a></li>\n                    <li>Follow <a href=\"http://www.twitter.com/slimphp\" target=\"_blank\">@slimphp</a> on Twitter</li>\n                </ol>\n            </section>\n            <section>\n                <h2>Slim Framework Community</h2>\n\n                <h3>Support Forum and Knowledge Base</h3>\n                <p>\n                    Visit the <a href=\"http://help.slimframework.com\" target=\"_blank\">Slim support forum and knowledge base</a>\n                    to read announcements, chat with fellow Slim users, ask questions, help others, or show off your cool\n                    Slim Framework apps.\n                </p>\n\n                <h3>Twitter</h3>\n                <p>\n                    Follow <a href=\"http://www.twitter.com/slimphp\" target=\"_blank\">@slimphp</a> on Twitter to receive the very latest news\n                    and updates about the framework.\n                </p>\n            </section>\n            <section style=\"padding-bottom: 20px\">\n                <h2>Slim Framework Extras</h2>\n                <p>\n                    Custom View classes for Smarty, Twig, Mustache, and other template\n                    frameworks are available online in a separate repository.\n                </p>\n                <p><a href=\"https://github.com/codeguy/Slim-Extras\" target=\"_blank\">Browse the Extras Repository</a></p>\n            </section>\n        </body>\n    </html>\nEOT;\n        echo $template;\n    }\n);\n\n$app->post('/user(/)', function() {\n	$user = new \\Lyverva\\lyvUser();\n	$user->sFirstname = \"David\";\n    $user->sSurname = \"Lumm\";\n    $user->sEmail = \"david.lumm@twinklebob.co.uk\";\n    $user->sPasswordHash = md5('letmein');\n    $user->save();\n});\n\n/**\n * Step 4: Run the Slim application\n *\n * This method should be called last. This executes the Slim application\n * and returns the HTTP response to the HTTP client.\n */\n$app->run();\n",
+			"file": "index.php",
+			"file_size": 8091,
+			"file_write_time": 1436221123000000,
+			"settings":
+			{
+				"buffer_size": 8264,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "class/class.lyvuser.php",
+			"settings":
+			{
+				"buffer_size": 399,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "",
+	"command_palette":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 139.0
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/home/david/.config/sublime-text-2/Packages/Default/Default (Linux).sublime-keymap"
+	],
+	"find":
+	{
+		"height": 35.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "index.php",
+					"settings":
+					{
+						"buffer_size": 8264,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								7908,
+								7908
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/PHP/PHP.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2040.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "class/class.lyvuser.php",
+					"settings":
+					{
+						"buffer_size": 399,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								25,
+								25
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/PHP/PHP.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 0.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"replace":
+	{
+		"height": 0.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 150.0,
+	"status_bar_visible": true
+}

@@ -7,18 +7,17 @@
  *
  * If you are using Composer, you can skip this step.
  */
+require 'include/config.inc.php';
 require 'Slim/Slim.php';
+require 'class/Database.singleton.php';
+require 'class/class.dal.php';
+require 'class/class.lyvuser.php';
 
 \Slim\Slim::registerAutoloader();
 
-/**
- * Step 2: Instantiate a Slim application
- *
- * This example instantiates a Slim application using
- * its default settings. However, you will usually configure
- * your Slim application now by passing an associative array
- * of setting names and values into the application constructor.
- */
+
+$db = Database::obtain(DB_SERVER, DB_USER, DB_PASS, DB_DATABASE);
+
 $app = new \Slim\Slim();
 
 /**
@@ -131,34 +130,10 @@ EOT;
     }
 );
 
-// POST route
-$app->post(
-    '/post',
-    function () {
-        echo 'This is a POST route';
-    }
-);
-
-// PUT route
-$app->put(
-    '/put',
-    function () {
-        echo 'This is a PUT route';
-    }
-);
-
-// PATCH route
-$app->patch('/patch', function () {
-    echo 'This is a PATCH route';
+$app->post('/user(/)', function() {
+	$user = new lyvUser();
+	$user->
 });
-
-// DELETE route
-$app->delete(
-    '/delete',
-    function () {
-        echo 'This is a DELETE route';
-    }
-);
 
 /**
  * Step 4: Run the Slim application
