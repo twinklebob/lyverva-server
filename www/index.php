@@ -15,8 +15,8 @@ require 'class/class.lyvuser.php';
 
 \Slim\Slim::registerAutoloader();
 
-
 $db = Database::obtain(DB_SERVER, DB_USER, DB_PASS, DB_DATABASE);
+$db->connect();
 
 $app = new \Slim\Slim();
 
@@ -130,10 +130,26 @@ EOT;
     }
 );
 
-$app->post('/user(/)', function() {
-	$user = new lyvUser();
-	$user->
+$app->get('/test(/)', function() {
+	echo "Yo!";
 });
+
+$app->post('/user(/)', function() use ($app) {
+	$user = new \Lyverva\lyvUser();
+	$user->sFirstname = "David";
+	$user->sSurname = "Lumm";
+	$user->sEmail = 'david.lumm@twinklebob.co.uk';
+	$user->save();
+	
+	$app->response->setStatus(201);
+	$app->response->headers->set('location', $app->urlFor('user_id', array('id' => $user->iLyvUserId)));
+});
+
+$app->get('/user/:id(/)', function($id) use ($app) {
+	$user = new \Lyverva\lyvUser($id);
+	$app->response->headers->set('Content-Type', 'application/json');
+	$app->response->setBody(json_encode($user));
+})->name('user_id');
 
 /**
  * Step 4: Run the Slim application

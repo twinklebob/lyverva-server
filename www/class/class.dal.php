@@ -1,6 +1,10 @@
 <?php
+namespace Lyverva;
+
+use \Database;
+
 class lyvDAL {
-	protected $aIgnoreSave = array("sTableName", "aIgnoreSave", "aClassExludeVars", "dtCreatedate", "iCreateuser", "dtModifydate", "iModifyuser");
+	protected $aIgnoreSave = array("sTableName", "aIgnoreSave", "aClassExludeVars", "dtCreatedate", "iCreateuser", "dtModifydate", "iModifyuser", "oDb");
 	protected $sTableName;
 	protected $aClassExludeVars = array();
 	
@@ -20,8 +24,8 @@ class lyvDAL {
 			$this->load($iId);
 		} else {
 			// Default create/modify values
-			$this->dtCreatedate = date("Y-m-d H:i");
-			$this->dtModifydate = date("Y-m-d H:i");
+			$this->dtCreatedate = time();
+			$this->dtModifydate = time();
 		}
 	}
 	
@@ -41,7 +45,7 @@ class lyvDAL {
 	
 	public function save($iUserId = 0) {
 		$aData = $this->getClassVars();
-		$sIdField = "i" . $this->sTableName . "id";
+		$sIdField = "i" . $this->sTableName . "Id";
 		if($this->$sIdField == 0) {
 			// Set create/modify date and user
 			$aData['createdate'] = date("Y-m-d H:i", $this->dtCreatedate);
@@ -50,7 +54,7 @@ class lyvDAL {
 			$aData['modifyuser'] = $iUserId;
 			
 			// Do INSERT
-			$iSqlResult = $this->oDb->insert(strtoupper($this->sTableName), $aData);
+			$iSqlResult = $this->oDb->insert(strtolower($this->sTableName), $aData);
 			
 			if($iSqlResult !== 0) {
 				$this->$sIdField = $iSqlResult;
@@ -58,7 +62,7 @@ class lyvDAL {
 				$bRetVal = false;
 			}
 			
-			$iSqlResult = $this->oDb->insert("DB_AUDIT", array(
+			$iSqlResult = $this->oDb->insert("db_audit", array(
 			  "userid" => $aData['modifyuser'],
 			  "tablename" => strtoupper($this->sTableName),
 			  "rowid" => $this->$sIdField,
@@ -70,8 +74,8 @@ class lyvDAL {
 			$aData['modifyuser'] = $iUserId;
 			
 			// Do UPDATE
-			$this->oDb->update(strtoupper($this->sTableName), $aData, array("id" => $this->$sIdField));
-			$iSqlResult = $this->oDb->insert("DB_AUDIT", array(
+			$this->oDb->update(strtolower($this->sTableName), $aData, array("id" => $this->$sIdField));
+			$iSqlResult = $this->oDb->insert("db_audit", array(
 			  "userid" => $aData['modifyuser'],
 			  "tablename" => strtoupper($this->sTableName),
 			  "rowid" => $this->$sIdField,
@@ -86,10 +90,13 @@ class lyvDAL {
 		$sIdField = "i" . $this->sTableName . "id";
 		foreach(get_object_vars($this) as $key => $value) {
 			// Exclude required variables
-			if(!array_key_exists($key, array_merge($this->aClassExludeVars, $this->aIgnoreSave, array($sIdField)))) {
+			if(!in_arrayi($key, array_merge($this->aClassExludeVars, $this->aIgnoreSave, array($sIdField)))) {
+				//echo "Key is: " . $key;
 				// Strip type
-				if(preg_match('/^(dt|[a|b|d|f|i|s])(.+)$/i', $key, $result) !== false) {
-					$aVars[$result[2]] = $value;
+				if(preg_match('/^(dt|[a|b|d|f|i|s])(.+)$/i', $key, $result) === 1) {
+					//var_export($result);
+					$sFieldName = $result[2];
+					$aVars[$sFieldName] = $value;
 				} else {
 					$aVars[$key] = $value;
 				}
@@ -112,4 +119,8 @@ class lyvDAL {
 			}
 		}
 	}
+}
+
+function in_arrayi($needle, $haystack) {
+	return in_array(strtolower($needle), array_map('strtolower', $haystack));
 }

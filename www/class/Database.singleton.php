@@ -34,6 +34,8 @@
 ###################################################################################################
 ###################################################################################################
 class Database{
+	
+	private $oMySql;
 
 	// debug flag for showing error messages
 	public	$debug = true;
@@ -86,16 +88,12 @@ public static function obtain($server=null, $user=null, $pass=null, $database=nu
 
 #-#############################################
 # desc: connect and select database using vars above
-# Param: $new_link can force connect() to open a new link, even if mysqli_connect() was called before with the same parameters
-public function connect($new_link=false){
-	$this->link_id=@mysqli_connect($this->server,$this->user,$this->pass,$new_link);
-
-	if (!$this->link_id){//open failed
+public function connect(){
+	$this->oMySql = new mysqli($this->server,$this->user,$this->pass,$this->database);
+	
+	if ($this->oMySql->connect_error) {
 		$this->oops("Could not connect to server: {$this->server}.");
-	}
-
-	if(!@mysqli_select_db($this->database, $this->link_id)){//no database
-		$this->oops("Could not open database: {$this->database}.");
+		//die('Connect Error (' . $mysqli->connect_errno . ') ' . $mysqli->connect_error);
 	}
 	
 	// Store connected status
@@ -113,7 +111,7 @@ public function connect($new_link=false){
 #-#############################################
 # desc: close the connection
 public function close(){
-	if(!@mysqli_close($this->link_id)){
+	if(!$this->oMySql->close()){
 		$this->oops("Connection close failed.");
 	}
 	$this->bIsConnected = false;
@@ -126,7 +124,7 @@ public function close(){
 # returns: string
 public function escape($string){
 	if(get_magic_quotes_runtime()) $string = stripslashes($string);
-	return @mysqli_real_escape_string($string,$this->link_id);
+	return $this->oMySql->real_escape_string($string);
 }#-#escape()
 
 
@@ -136,14 +134,14 @@ public function escape($string){
 # returns: (query_id) for fetching results etc
 public function query($sql, $param = null){
 	// do query
-	$this->query_id = @mysqli_query($sql, $this->link_id);
+	$this->query_id = $this->oMySql->query($sql);
 
 	if (!$this->query_id){
 		$this->oops("MySQL Query fail: $sql");
 		return 0;
 	}
 	
-	$this->affected_rows = @mysqli_affected_rows($this->link_id);
+	$this->affected_rows = $this->oMySql->affected_rows;
 
 	return $this->query_id;
 }#-#query()
@@ -153,7 +151,7 @@ public function query($sql, $param = null){
 # desc: does a query, fetches the first row only, frees resultset
 # param: (MySQL query) the query to run on server
 # returns: array of fetched results
-public function query_first($query_string, $param = null){
+public function queryFirst($query_string, $param = null){
 	$query_id = $this->query($query_string, $param);
 	$out = $this->fetch($query_id);
 	$this->free_result($query_id);
@@ -172,7 +170,7 @@ public function fetch($query_id=-1){
 	}
 
 	if (isset($this->query_id)){
-		$record = @mysqli_fetch_assoc($this->query_id);
+		$record = $this->query_id->fetch_assoc();
 	}else{
 		$this->oops("Invalid query_id: {$this->query_id}. Records could not be fetched.");
 	}
@@ -186,14 +184,10 @@ public function fetch($query_id=-1){
 # param: (MySQL query) the query to run on server
 # returns: assoc array of ALL fetched results
 public function fetch_array($sql, $param = null){
-	$query_id = $this->query($sql, $param);
-	$out = array();
+	$results = $this->query($sql, $param);
+	$out = $results->fetch_all(MYSQLI_ASSOC);
 
-	while ($row = $this->fetch($query_id)){
-		$out[] = $row;
-	}
-
-	$this->free_result($query_id);
+	$this->free_result($results);
 	return $out;
 }#-#fetch_array()
 
@@ -236,7 +230,7 @@ public function insert($table, $data){
 	$q .= "(". rtrim($n, ', ') .") VALUES (". rtrim($v, ', ') .");";
 
 	if($this->query($q)){
-		return mysqli_insert_id($this->link_id);
+		return $this->oMySql->insert_id;
 	}
 	else return false;
 
@@ -250,8 +244,8 @@ private function free_result($query_id=-1){
 	if ($query_id!=-1){
 		$this->query_id=$query_id;
 	}
-	if($this->query_id!=0 && !@mysqli_free_result($this->query_id)){
-		$this->oops("Result ID: {$this->query_id} could not be freed.");
+	if($this->query_id!=0) {
+		$this->query_id->free();
 	}
 }#-#free_result()
 
@@ -260,10 +254,9 @@ private function free_result($query_id=-1){
 # desc: throw an error message
 # param: [optional] any custom error to display
 private function oops($msg=''){
-	if(!empty($this->link_id)) {
-		$this->error = mysqli_error($this->link_id);
-	} else {
-		$this->error = mysqli_error();
+	$this->error = $this->oMySql->error;
+	if(!$this->bIsConnected) {
+		$this->error = $this->oMySql->connect_error;
 		$msg = "WARNING: No link_id found. Likely not be connected to database." . PHP_EOL . $msg;
 	}
 

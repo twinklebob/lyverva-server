@@ -1,3 +1,4 @@
+<?php
 //database server
 define('DB_SERVER', "twinklebob.dns-systems.net");
 
