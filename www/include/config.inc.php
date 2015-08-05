@@ -1,12 +1,12 @@
 <?php
 //database server
-define('DB_SERVER', "twinklebob.dns-systems.net");
+define('DB_SERVER', "");
 
 //database login name
-define('DB_USER', "twinklebob_lyv");
+define('DB_USER', "");
 
 //database login password
-define('DB_PASS', "Tw1nkl3b0b");
+define('DB_PASS', "");
 
 //database name
-define('DB_DATABASE', "twinklebob_lyv");
+define('DB_DATABASE', "");

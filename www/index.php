@@ -8,6 +8,9 @@
  * If you are using Composer, you can skip this step.
  */
 require 'include/config.inc.php';
+if(file_exists('include/config.inc.local.php')) {
+    require 'include/config.inc.local.php';
+}
 require 'Slim/Slim.php';
 require 'class/Database.singleton.php';
 require 'class/class.dal.php';

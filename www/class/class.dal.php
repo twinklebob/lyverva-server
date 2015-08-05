@@ -3,7 +3,7 @@ namespace Lyverva;
 
 use \Database;
 
-class lyvDAL {
+class LyvDAL {
 	protected $aIgnoreSave = array("sTableName", "aIgnoreSave", "aClassExludeVars", "dtCreatedate", "iCreateuser", "dtModifydate", "iModifyuser", "oDb");
 	protected $sTableName;
 	protected $aClassExludeVars = array();

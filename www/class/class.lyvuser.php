@@ -1,7 +1,7 @@
 <?php
 namespace Lyverva;
 
-class lyvUser extends lyvDAL {
+class LyvUser extends LyvDAL {
 	public $iLyvUserId = 0;
 	
 	public $sFirstname = "";
