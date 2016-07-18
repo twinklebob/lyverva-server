@@ -137,22 +137,9 @@ $app->get('/test(/)', function() {
 	echo "Yo!";
 });
 
-$app->post('/user(/)', function() use ($app) {
-	$user = new \Lyverva\lyvUser();
-	$user->sFirstname = "David";
-	$user->sSurname = "Lumm";
-	$user->sEmail = 'david.lumm@twinklebob.co.uk';
-	$user->save();
-	
-	$app->response->setStatus(201);
-	$app->response->headers->set('location', $app->urlFor('user_id', array('id' => $user->iLyvUserId)));
-});
-
-$app->get('/user/:id(/)', function($id) use ($app) {
-	$user = new \Lyverva\lyvUser($id);
-	$app->response->headers->set('Content-Type', 'application/json');
-	$app->response->setBody(json_encode($user));
-})->name('user_id');
+foreach(glob('routes/route*.php') as $sRouteFilename) {
+    include($sRouteFilename);
+}
 
 /**
  * Step 4: Run the Slim application
