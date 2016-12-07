@@ -7,274 +7,600 @@
 # Version: 3.1.4
 # Copyright 2003 ricocheting.com
 
+/*
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 /*
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+ * Usage:
+ * require("config.inc.php");
+ * $db = Database::obtain(DB_SERVER, DB_USER, DB_PASS, DB_DATABASE);
+ * $db = Database::obtain();
+ */
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+/**
+ * Database helper class
+ */
+class Database {
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+    /**
+     * MySQL connection object
+     * @var \mysqli 
+     */
+    private $oMySql;
 
+    /**
+     * Debug flag for showing error messages
+     * @var bool
+     */
+    public $debug = true;
 
-//require("config.inc.php");
-//$db = Database::obtain(DB_SERVER, DB_USER, DB_PASS, DB_DATABASE);
+    /**
+     * Stores the single instance of Database
+     * @var self
+     */
+    private static $instance;
+    /**
+     * Database server
+     * @var string 
+     */
+    private $server = "";
+    /**
+     * Database login name
+     * @var string
+     */
+    private $user = "";
+    /**
+     * Database login password
+     * @var string
+     */
+    private $pass = "";
+    /**
+     * Database name
+     * @var string
+     */
+    private $database = "";
+    
+    /**
+     * Detail of last error
+     * @var string
+     */
+    private $error = "";
+    
+    /**
+     * Last query executed
+     * @var string
+     */
+    private $lastQuery = '';
+    
+    /**
+     * Last parameters passed to query execution
+     * @var array
+     */
+    private $lastParams = [];
 
-//$db = Database::obtain();
+    /**
+     * mysqli_stmt object to perform actions against
+     * @var \mysqli_stmt
+     */
+    private $stmt = null;
+    #######################
 
+    /**
+     * Number of rows affected by last SQL query
+     */
+    public $affected_rows = 0;
+    /**
+     * Connection status flag
+     * @var bool
+     */
+    public $bIsConnected = false;
 
-###################################################################################################
-###################################################################################################
-###################################################################################################
-class Database{
-	
-	private $oMySql;
-
-	// debug flag for showing error messages
-	public	$debug = true;
-
-	// Store the single instance of Database
-	private static $instance;
-
-	private	$server   = ""; //database server
-	private	$user     = ""; //database login name
-	private	$pass     = ""; //database login password
-	private	$database = ""; //database name
-
-	private	$error = "";
-
-	#######################
-	//number of rows affected by SQL query
-	public	$affected_rows = 0;
-
-	private	$link_id = 0;
-	private	$query_id = 0;
-	
-	public $bIsConnected = false;
-
-
-#-#############################################
-# desc: constructor
-private function __construct($server=null, $user=null, $pass=null, $database=null){
+    /**
+     * Create new instance of a Database helper object
+     * @param string $server Database server
+     * @param string $user Database login name
+     * @param string $pass Database password
+     * @param string $database Database name
+     */
+    private function __construct($server = null, $user = null, $pass = null, $database = null) {
 	// error catching if not passed in
-	if($server==null || $user==null || $database==null){
-		$this->oops("Database information must be passed in when the object is first created.");
+	if ($server == null || $user == null || $database == null) {
+	    $this->oops("Database information must be passed in when the object is first created.");
 	}
 
-	$this->server=$server;
-	$this->user=$user;
-	$this->pass=$pass;
-	$this->database=$database;
-}#-#constructor()
+	$this->server = $server;
+	$this->user = $user;
+	$this->pass = $pass;
+	$this->database = $database;
+    }
 
+    /**
+     * Singleton declaration
+     * @param string $server Database server
+     * @param string $user Database login name
+     * @param string $pass Database password
+     * @param string $database Database name
+     * @return self Singleton instance
+     */
+    public static function obtain($server = null, $user = null, $pass = null, $database = null) {
+	if (!self::$instance) {
+	    self::$instance = new Database($server, $user, $pass, $database);
+	}
 
-#-#############################################
-# desc: singleton declaration
-public static function obtain($server=null, $user=null, $pass=null, $database=null){
-	if (!self::$instance){ 
-		self::$instance = new Database($server, $user, $pass, $database); 
-	} 
+	return self::$instance;
+    }
 
-	return self::$instance; 
-}#-#obtain()
+    /**
+     * Connect and select database using defined variables
+     */
+    public function connect() {
+	$this->oMySql = new mysqli($this->server, $this->user, $this->pass, $this->database);
 
-
-#-#############################################
-# desc: connect and select database using vars above
-public function connect(){
-	$this->oMySql = new mysqli($this->server,$this->user,$this->pass,$this->database);
-	
 	if ($this->oMySql->connect_error) {
-		$this->oops("Could not connect to server: {$this->server}.");
-		//die('Connect Error (' . $mysqli->connect_errno . ') ' . $mysqli->connect_error);
+	    $this->oops("Could not connect to server: {$this->server}.");
+	    //die('Connect Error (' . $mysqli->connect_errno . ') ' . $mysqli->connect_error);
 	}
-	
+
 	// Store connected status
 	$this->bIsConnected = true;
 
-	// unset the data so it can't be dumped
-	$this->server='';
-	$this->user='';
-	$this->pass='';
-	$this->database='';
-}#-#connect()
+	// Unset the data so it can't be dumped
+	$this->server = '';
+	$this->user = '';
+	$this->pass = '';
+	$this->database = '';
+    }
 
-
-
-#-#############################################
-# desc: close the connection
-public function close(){
-	if(!$this->oMySql->close()){
-		$this->oops("Connection close failed.");
+    /**
+     * Close the connection
+     */
+    public function close() {
+	// Close any currently opened statements
+	if (!empty($this->stmt)) {
+	    if (!$this->stmt->close()) {
+		$this->oops("Unable to close statement.");
+	    }
+	}
+	// Now close db connection
+	if (!$this->oMySql->close()) {
+	    $this->oops("Connection close failed.");
 	}
 	$this->bIsConnected = false;
-}#-#close()
+    }
 
-
-#-#############################################
-# Desc: escapes characters to be mysql ready
-# Param: string
-# returns: string
-public function escape($string){
-	if(get_magic_quotes_runtime()) $string = stripslashes($string);
+    /**
+     * Escapes characters to be mysql ready
+     * @param string $string Value to be escaped
+     * @return string Escaped string
+     */
+    public function escape($string) {
+	if (get_magic_quotes_runtime())
+	    $string = stripslashes($string);
 	return $this->oMySql->real_escape_string($string);
-}#-#escape()
+    }
 
 
-#-#############################################
-# Desc: executes SQL query to an open connection
-# Param: (MySQL query) to execute
-# returns: (query_id) for fetching results etc
-public function query($sql, $param = null){
-	// do query
-	$this->query_id = $this->oMySql->query($sql);
-
-	if (!$this->query_id){
-		$this->oops("MySQL Query fail: $sql");
-		return 0;
+    /**
+     * Executes SQL query to an open connection
+     * @param string $sql MySQL query to execute
+     * @param mixed $param Optional parameters
+     * @return \mysqli_stmt Prepared statement
+     */
+    public function query($sql, $param = null) {
+	// Close any currently opened statements
+	if (!empty($this->stmt)) {
+	    if (!$this->stmt->close()) {
+		$this->oops("Unable to close previous statement.");
+	    }
 	}
+
+        $this->lastQuery = $sql;
+        $this->lastParams = $param;
+        
+	// Prepare statement
+	$this->stmt = $this->oMySql->prepare($sql);
+	if(!$this->stmt) {
+	    $this->oops('Could not prepare statement');
+	}
+        if(!empty($param)) {
+            $aStmtParams = $this->getParamArray($param);
+            $this->lastParams = $aStmtParams;
+
+            try {
+                call_user_func_array(array($this->stmt, 'bind_param'), refValues($aStmtParams));
+            } catch (\Exception $e) {
+                $this->oops($e->getMessage());
+            }
+        }
+
+	if (!$this->stmt->execute()) {
+	    $this->oops("MySQL Query fail: $sql");
+	    return null;
+	}
+
+	$this->affected_rows = $this->stmt->affected_rows;
+
+	return $this->stmt;
+    }
+
+
+    /**
+     * Transforms array of parameters into MySQLi statement params
+     * @param mixed $aParam Array of parameters (or single parameter) to transform
+     * @return array MySQLi compatible parameter array
+     */
+    public function getParamArray($aParam = null) {
+	if (empty($aParam)) {
+	    return array();
+	}
+	if (!is_array($aParam)) {
+	    $aParam = array($aParam);
+	}
+	$sTypes = '';
+	foreach ($aParam as $value) {
+	    if (is_int($value)) {
+		$sTypes .= 'i';
+	    } else if (is_float($value)) {
+		$sTypes .= 'd';
+	    } else {
+		$sTypes .= 's';
+	    } // TODO: Currently ignores blob types
+	}
+	array_unshift($aParam, $sTypes);
+	return $aParam;
+    }
+    
+
+    /**
+     * Does a query, fetches the first row only, frees resultset
+     * @param string $query_string The query to run on server
+     * @param mixed $param Optional parameters
+     * @return array Fetched results as associative array
+     */
+    public function queryFirst($query_string, $param = null) {
+	$stmt = $this->query($query_string, $param);
+//        echo $this->lastQuery;
+//        var_dump($this->lastParams);
+	$out = $this->fetch($stmt);
+	$this->free_result($stmt);
+	return $out;
+    }
+
+
+    /**
+     * Fetches and returns results one line at a time
+     * @param \mysqli_stmt $stmt Prepared statement
+     * @return array Fetched results as associative array
+     */
+    public function fetch($stmt = false) {
+	$results = array();
 	
-	$this->affected_rows = $this->oMySql->affected_rows;
+	//$stmt->store_result();
 
-	return $this->query_id;
-}#-#query()
+	if ($stmt) {
+	    $fields = $stmt->result_metadata()->fetch_fields();
+	    $args = array();
+	    foreach ($fields AS $field) {
+		$key = str_replace(' ', '_', $field->name); // space may be valid SQL, but not PHP
+		$args[$key] = &$field->name; // this way the array key is also preserved
+	    }
+	    call_user_func_array(array($stmt, "bind_result"), $args);
+	    if ($stmt->fetch()) {
+		$results = array_map("copy_value", $args);
+	    } else if($stmt->errno != 0) {
+		    $this->oops($stmt->error);
+	    } else {
+		return null;
+	    }
+	} else {
+	    $this->oops("Invalid statement. Records could not be fetched.");
+	}
+
+	return $results;
+    }
 
 
-#-#############################################
-# desc: does a query, fetches the first row only, frees resultset
-# param: (MySQL query) the query to run on server
-# returns: array of fetched results
-public function queryFirst($query_string, $param = null){
-	$query_id = $this->query($query_string, $param);
-	$out = $this->fetch($query_id);
-	$this->free_result($query_id);
+    /**
+     * Returns all results (not one row)
+     * @param string $sql The query to run on server
+     * @param mixed $param Optional parameters
+     * @return array Fetched results as an array of associative arrays
+     */
+    public function fetch_array($sql, $param = null) {
+	$stmt = $this->query($sql, $param);
+
+	$out = [];
+	
+	$result = $this->fetch($stmt);
+//	echo '<br/>Result:<br/>' . PHP_EOL;
+//	var_dump($result);
+	while (!empty($result)) {
+	    $out[] = $result;
+	    $result = $this->fetch($stmt);
+	}
+
+	$this->free_result($stmt);
 	return $out;
-}#-#query_first()
+    }
 
 
-#-#############################################
-# desc: fetches and returns results one line at a time
-# param: query_id for mysql run. if none specified, last used
-# return: (array) fetched record(s)
-public function fetch($query_id=-1){
-	// retrieve row
-	if ($query_id!=-1){
-		$this->query_id=$query_id;
+    /**
+     * Perform an update using an associative array
+     * @param string $sTable Table name
+     * @param array $aData assoc array with data
+     * @param array $aWhere Associative array @see self::paramWhere()
+     * @return bool TRUE if successful
+     */
+    public function update($sTable, $aData, $aWhere) {
+	$sQuery = "UPDATE `" . $sTable . "` SET ";
+	$aParams = array();
+	$sWhere = "";
+
+	// Split Data into "SET" commands and parameters
+	foreach ($aData as $key => $val) {
+	    if ($key != "id") {
+		// Add $key to SET list
+		$sQuery .= "`$key` = (?), ";
+
+		if (strtolower($val) === 'null' || $val === '') {
+		    $aParams[] = NULL;
+		}
+		//reverse any dates if needed
+		elseif (substr_count($val, '/') == 2 && strlen($val) == 10 && strpos($val, '/') == 2) {
+		    //the string contains 3 / and is the correct length and the first / appear at pos 2 - reverse the date
+		    $reversedDate = substr($val, 6, 4) . "-" . substr($val, 3, 2) . "-" . substr($val, 0, 2);
+		    $aParams[] = $reversedDate;
+		} elseif (strtolower($val) == 'now()') {
+		    $aParams[] = "NOW()";
+		}
+		// Controversial-- elseif(preg_match("/^increment\((\-?\d+)\)$/i",$val,$m)) $sQuery.= "[$key] = '$key' + $m[1], "; 
+		else
+		    $aParams[] = $this->escape($val);
+	    }
 	}
 
-	if (isset($this->query_id)){
-		$record = $this->query_id->fetch_assoc();
-	}else{
-		$this->oops("Invalid query_id: {$this->query_id}. Records could not be fetched.");
+	$sQuery = rtrim($sQuery, ', ');
+
+	// Split where using paramWhere
+	if (!empty($aWhere)) {
+	    $this->paramWhere($aWhere, $sWhere, $aParams);
+	    $sQuery .= " WHERE " . $sWhere;
 	}
 
-	return $record;
-}#-#fetch()
+	$sQuery .= ";";
+
+	//$this->log_me($sQuery);
+	if($this->query($sQuery, $aParams)) {
+	    $this->free_result($this->stmt);
+	    //$this->stmt->close();
+	    return true;
+	} else {
+	    return false;
+	}
+    }
 
 
-#-#############################################
-# desc: returns all the results (not one row)
-# param: (MySQL query) the query to run on server
-# returns: assoc array of ALL fetched results
-public function fetch_array($sql, $param = null){
-	$results = $this->query($sql, $param);
-	$out = $results->fetch_all(MYSQLI_ASSOC);
+    /**
+     * Perform an insert using an associative array
+     * @param string $sTable Name of table to insert to
+     * @param array $aData Associative array of data
+     * @return int|boolean ID of inserted record, false if error
+     */
+    public function insert($sTable, $aData) {
+	$sQuery = "INSERT INTO `" . $sTable . "` ";
+	$aParams = array();
+	$sFields = "";
+	$sVals = "";
 
-	$this->free_result($results);
-	return $out;
-}#-#fetch_array()
-
-
-#-#############################################
-# desc: does an update query with an array
-# param: table, assoc array with data (not escaped), where condition (optional. if none given, all records updated)
-# returns: (query_id) for fetching results etc
-public function update($table, $data, $where='1'){
-	$q="UPDATE `$table` SET ";
-
-	foreach($data as $key=>$val){
-		if(strtolower($val)=='null') $q.= "`$key` = NULL, ";
-		elseif(strtolower($val)=='now()') $q.= "`$key` = NOW(), ";
-		elseif(preg_match("/^increment\((\-?\d+)\)$/i",$val,$m)) $q.= "`$key` = `$key` + $m[1], "; 
-		else $q.= "`$key`='".$this->escape($val)."', ";
+	// Split Data into "SET" commands and parameters
+	foreach ($aData as $key => $val) {
+	    if ($key != "id") {
+		// Add $key to SET list
+		$sFields .= "`$key`, ";
+                
+		if (is_string($val) && strtolower($val) === 'null') {
+		    $aParams[] = NULL;
+		}
+		//reverse any dates if needed
+		elseif (is_string($val) && substr_count($val, '/') == 2 && strlen($val) == 10 && strpos($val, '/') == 2) {
+		    //the string contains 3 / and is the correct length and the first / appear at pos 2 - reverse the date
+		    $reversedDate = substr($val, 6, 4) . "-" . substr($val, 3, 2) . "-" . substr($val, 0, 2);
+		    $aParams[] = $reversedDate;
+		} elseif (is_string($val) && strtolower($val) == 'now()') {
+		    $aParams[] = "NOW()";
+		} else {
+		    $aParams[] = $val;
+		}
+	    }
+	    $sVals .= "?, ";
 	}
 
-	$q = rtrim($q, ', ') . ' WHERE '.$where.';';
+	$sQuery .= "(" . rtrim($sFields, ', ') . ") VALUES (" . rtrim($sVals, ', ') . ");";
 
-	return $this->query($q);
-}#-#update()
-
-
-#-#############################################
-# desc: does an insert query with an array
-# param: table, assoc array with data (not escaped)
-# returns: id of inserted record, false if error
-public function insert($table, $data){
-	$q="INSERT INTO `$table` ";
-	$v=''; $n='';
-
-	foreach($data as $key=>$val){
-		$n.="`$key`, ";
-		if(strtolower($val)=='null') $v.="NULL, ";
-		elseif(strtolower($val)=='now()') $v.="NOW(), ";
-		else $v.= "'".$this->escape($val)."', ";
+	if ($this->query($sQuery, $aParams)) {
+	    $id = $this->stmt->insert_id;
+	    $this->free_result($this->stmt);
+	    //$this->stmt->close();
+	    return $id;
+	} else {
+	    return false;
 	}
-
-	$q .= "(". rtrim($n, ', ') .") VALUES (". rtrim($v, ', ') .");";
-
-	if($this->query($q)){
-		return $this->oMySql->insert_id;
+    }
+    
+    /**
+     * Deletes rows from a table
+     * @param string $sTable Table name
+     * @param array $aWhere Associative array @see self::paramWhere()
+     * @return boolean TRUE if successful
+     */
+    public function delete($sTable, $aWhere) {
+        $sQuery = "DELETE FROM `" . $sTable . "`";
+	$aParams = array();
+	$sWhere = "";
+        
+        // Split where using paramWhere
+	if (!empty($aWhere)) {
+	    $this->paramWhere($aWhere, $sWhere, $aParams);
+	    $sQuery .= " WHERE " . $sWhere;
+	} else {
+            $this->oops('Cannot perform delete without WHERE clause');
+        }
+        
+        if ($this->query($sQuery, $aParams)) {
+	    return true;
+	} else {
+	    return false;
 	}
-	else return false;
-
-}#-#insert()
+    }
 
 
-#-#############################################
-# desc: frees the resultset
-# param: query_id for mysql run. if none specified, last used
-private function free_result($query_id=-1){
-	if ($query_id!=-1){
-		$this->query_id=$query_id;
+    /**
+     * Frees the resultset
+     * @param \mysqli_stmt $stmt Prepared statement. If none specified, last used
+     */
+    private function free_result($stmt = null) {
+	if ($stmt) {
+	    $stmt->free_result();
+	} else if ($this->stmt) {
+	    $this->stmt->free_result();
 	}
-	if($this->query_id!=0) {
-		$this->query_id->free();
+    }
+
+
+    /**
+     * Parameterises a "where" array
+     * $aIn in format: array("type"=>"operator", "operator"=>"and", array("id"=>"1"), array("type"=>"operator", "operator"=>"or", array("fred"=>"jim"), array("bob"=>"12")))
+     * @param array $aIn Input array
+     * @param string $sOut Output string with parameterised values
+     * @param array $aOut Output array of parameters (by ref)
+     */
+    function paramWhere($aIn, &$sOut, &$aOut) {
+	$sType = "";
+	if (array_key_exists("type", $aIn))
+	    $sType = $aIn["type"];
+
+	//echo "Type is: " . $sType;
+	//basic key=>value pairs
+	if ($sType == "" || $sType == "basic") {
+	    //echo "Basic type.";
+	    foreach ($aIn as $key => $value) {
+		if ($key !== "type") {
+		    $sOut .= $key . " = (?) ";
+		    $aOut[] = $value;
+		    //echo "<br/>sOut = " . $sOut . "<br/>";
+		}
+	    }
 	}
-}#-#free_result()
+	//logical operator types
+	elseif ($sType == "operator") {
+	    $sOperator = strtoupper($aIn['operator']);
 
+	    $sOut .= "(";
 
-#-#############################################
-# desc: throw an error message
-# param: [optional] any custom error to display
-private function oops($msg=''){
+	    foreach ($aIn as $key => $value) {
+		//echo "Key is: " . $key . "<br/>";
+		if (($key !== "type" && $key !== 'operator') || $key === 0) {
+		    //echo "Calling paramWhere with value: ";
+		    //print_r($value);
+		    //echo "<br/>";
+		    $this->paramWhere($value, $sOut, $aOut);
+		    $sOut .= " " . $sOperator . " ";
+		}
+	    }
+
+	    // Strip out last "operator"
+	    $iPos = strrpos($sOut, " " . $sOperator . " ");
+	    if ($iPos !== false) {
+		$sOut = substr($sOut, 0, $iPos - 1);
+	    }
+
+	    $sOut .= ")";
+	}
+	//special types
+	elseif ($sType == "like") {
+	    foreach ($aIn as $key => $value) {
+		if ($key !== "type") {
+		    $sOut .= $key . " like (?) ";
+		    $aOut[] = $value;
+		}
+	    }
+	} elseif ($sType == "special") {
+	    foreach ($aIn as $key => $value) {
+		if ($key !== "type") {
+		    $sOut .= $key . " ";
+		}
+	    }
+	}
+    }
+    
+
+    /**
+     * Throw an exception message
+     * @param string $msg Any custom error to display
+     * @throws ErrorException
+     */
+    private function oops($msg = '') {
 	$this->error = $this->oMySql->error;
-	if(!$this->bIsConnected) {
-		$this->error = $this->oMySql->connect_error;
-		$msg = "WARNING: No link_id found. Likely not be connected to database." . PHP_EOL . $msg;
+	if (!$this->bIsConnected) {
+	    $this->error = $this->oMySql->connect_error;
+	    $msg = "WARNING: No link_id found. Likely not be connected to database." . PHP_EOL . $msg;
+	}
+	if($this->stmt && $this->stmt->errno) {
+	    $this->error = $this->stmt->error;
 	}
 
 	// if no debug, done here
-	if(!$this->debug) {
-		throw new ErrorException("Database error occurred." . $this->error);
+	if (!$this->debug) {
+	    throw new ErrorException("Database error occurred." . $this->error);
 	} else {
-		$sErrorMessage = 'MySQL Error: ' . $this->error . PHP_EOL;
-		if(!empty($_SERVER['REQUEST_URI'])) {
-			$sErrorMessage .= 'Script: ' . $_SERVER['REQUEST_URI'] . PHP_EOL;
-		}
-		if(!empty($_SERVER['HTTP_REFERER'])) {
-			$sErrorMessage .= 'Referer: ' . $_SERVER['HTTP_REFERER'];
-		}
-		throw new ErrorException($sErrorMessage);
+	    $sErrorMessage = 'MySQL Error: ' . $this->error . PHP_EOL;
+            if(!empty($this->lastQuery)) {
+                $sErrorMessage .= 'Last Query: ' . $this->lastQuery . PHP_EOL;
+            }
+            if(!empty($this->lastParams)) {
+                $sErrorMessage .= 'Last Params: ' . var_export($this->lastParams, true) . PHP_EOL;
+            }
+	    if (!empty($_SERVER['REQUEST_URI'])) {
+		$sErrorMessage .= 'Script: ' . $_SERVER['REQUEST_URI'] . PHP_EOL;
+	    }
+	    if (!empty($_SERVER['HTTP_REFERER'])) {
+		$sErrorMessage .= 'Referer: ' . $_SERVER['HTTP_REFERER'];
+	    }
+	    throw new \ErrorException($sErrorMessage);
 	}
-}#-#oops()
-
-
-}//CLASS Database
+    }
+}
+//CLASS Database ends
 ###################################################################################################
+
+/**
+ * Copy value as value
+ * @param mixed $v Input value
+ * @return mixed Value returned by val
+ */
+function copy_value($v) {
+    return $v;
+}
+
+function refValues($arr){
+    if (strnatcmp(phpversion(),'5.3') >= 0) //Reference is required for PHP 5.3+
+    {
+        $refs = array();
+        foreach($arr as $key => $value)
+            $refs[$key] = &$arr[$key];
+        return $refs;
+    }
+    return $arr;
+}
