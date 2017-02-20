@@ -1,0 +1,13 @@
+{
+    "name": "twinklebob/lyverva-server",
+    "description": "Lyverva home library system restful API",
+    "authors": [
+        {
+            "name": "David Lumm",
+            "email": "david.lumm@twinklebob.co.uk"
+        }
+    ],
+    "require": {
+        "slim/slim" : "2.6.*"
+    }
+}

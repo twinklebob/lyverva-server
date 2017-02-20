@@ -1,3 +1,4 @@
 *.local.php
 .directory
 nbproject
+vendor

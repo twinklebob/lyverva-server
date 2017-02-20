@@ -1,23 +1,18 @@
 <?php
-/**
- * Step 1: Require the Slim Framework
- *
- * If you are not using Composer, you need to require the
- * Slim Framework and register its PSR-0 autoloader.
- *
- * If you are using Composer, you can skip this step.
- */
-require 'include/config.inc.php';
 if(file_exists('include/config.inc.local.php')) {
     require 'include/config.inc.local.php';
+} else {
+    require 'include/config.inc.php';
 }
 
-require 'Slim/Slim.php';
+/*
+ * Composer Autoloader
+ */
+require __DIR__ . '/../vendor/autoload.php';
+
 require 'class/Database.singleton.php';
 require 'class/class.dal.php';
 require 'class/class.lyvuser.php';
-
-\Slim\Slim::registerAutoloader();
 
 $db = Database::obtain(DB_SERVER, DB_USER, DB_PASS, DB_DATABASE);
 $db->connect();
@@ -27,10 +22,6 @@ $app = new \Slim\Slim();
 /**
  * Step 3: Define the Slim application routes
  *
- * Here we define several Slim application routes that respond
- * to appropriate HTTP request methods. In this example, the second
- * argument for `Slim::get`, `Slim::post`, `Slim::put`, `Slim::patch`, and `Slim::delete`
- * is an anonymous function.
  */
 
 // GET route
